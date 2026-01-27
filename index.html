@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Age</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        :root {
+            --bg: #000;
+            --fg: #fff;
+            --muted: #888;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #fff;
+                --fg: #000;
+                --muted: #555;
+            }
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        .age {
+            font-size: clamp(2rem, 6vw, 4rem);
+            letter-spacing: 0.05em;
+        }
+
+        .form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        input, button {
+            background: transparent;
+            color: var(--fg);
+            border: 1px solid var(--muted);
+            padding: 0.6rem;
+            font-family: monospace;
+            font-size: 1rem;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: var(--fg);
+            color: var(--bg);
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+
+    <!-- Birthday input -->
+    <form class="form" id="birthForm">
+        <div>Enter your birthdate</div>
+        <input type="date" id="date" required>
+        <input type="time" id="time" step="1" required>
+        <button type="submit">Start</button>
+        <div class="hint">
+            You will be asked again on refresh
+        </div>
+    </form>
+
+</div>
+
+<script>
+    const DECIMALS = 24;
+    const YEAR_SECONDS = 365.2425 * 24 * 60 * 60;
+
+    let birthdate = null;
+    let lastValue = 0;
+
+    const app = document.getElementById("app");
+    const form = document.getElementById("birthForm");
+
+    form.addEventListener("submit", e => {
+        e.preventDefault();
+
+        const date = document.getElementById("date").value;
+        const time = document.getElementById("time").value;
+
+        birthdate = new Date(`${date}T${time}`);
+
+        app.innerHTML = `<div class="age" id="age">0.000000000000000000000000</div>`;
+
+        start();
+    });
+
+    function start() {
+        function update() {
+            const now = Date.now();
+            const ageSeconds = (now - birthdate.getTime()) / 1000;
+            const age = ageSeconds / YEAR_SECONDS;
+
+            // Smooth interpolation
+            lastValue += (age - lastValue) * 0.15;
+
+            const formatted = lastValue.toFixed(DECIMALS);
+
+            document.getElementById("age").textContent = formatted;
+            document.title = formatted;
+
+            requestAnimationFrame(update);
+        }
+
+        update();
+    }
+</script>
+
+</body>
+</html>
