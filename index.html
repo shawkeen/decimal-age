@@ -1,135 +1,670 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>Age</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>age</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #060a06;
+      --surface: #0b110b;
+      --fg: #a8ff78;
+      --fg-dim: #5aaa3a;
+      --fg-muted: #2d5e1e;
+      --amber: #ffb347;
+      --red: #ff5555;
+      --border: #1e3a14;
+      --glow: 0 0 12px rgba(168,255,120,0.35);
+      --glow-strong: 0 0 24px rgba(168,255,120,0.6);
+    }
 
-    <style>
-        :root {
-            --bg: #000;
-            --fg: #fff;
-            --muted: #888;
-        }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        @media (prefers-color-scheme: light) {
-            :root {
-                --bg: #fff;
-                --fg: #000;
-                --muted: #555;
-            }
-        }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Share Tech Mono', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
 
-        body {
-            margin: 0;
-            height: 100vh;
-            background: var(--bg);
-            color: var(--fg);
-            font-family: monospace;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+    /* CRT scanlines overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.18) 2px,
+        rgba(0,0,0,0.18) 4px
+      );
+      pointer-events: none;
+      z-index: 100;
+    }
 
-        .container {
-            text-align: center;
-        }
+    /* subtle vignette */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.75) 100%);
+      pointer-events: none;
+      z-index: 99;
+    }
 
-        .age {
-            font-size: clamp(2rem, 6vw, 4rem);
-            letter-spacing: 0.05em;
-        }
+    /* ── FORM SCREEN ── */
+    #form-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.6rem;
+      animation: fadeIn 0.6s ease both;
+    }
 
-        .form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
+    .form-title {
+      font-family: 'VT323', monospace;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      color: var(--fg);
+      text-shadow: var(--glow-strong);
+      letter-spacing: 0.1em;
+      text-align: center;
+    }
 
-        input, button {
-            background: transparent;
-            color: var(--fg);
-            border: 1px solid var(--muted);
-            padding: 0.6rem;
-            font-family: monospace;
-            font-size: 1rem;
-        }
+    .form-subtitle {
+      font-size: 0.8rem;
+      color: var(--fg-muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
 
-        button {
-            cursor: pointer;
-        }
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      width: 280px;
+    }
 
-        button:hover {
-            background: var(--fg);
-            color: var(--bg);
-        }
+    .field-label {
+      font-size: 0.75rem;
+      color: var(--fg-dim);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
 
-        .hint {
-            color: var(--muted);
-            font-size: 0.9rem;
-        }
-    </style>
+    input[type="date"],
+    input[type="time"] {
+      width: 100%;
+      background: var(--surface);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      padding: 0.65rem 0.8rem;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+      color-scheme: dark;
+    }
+
+    input[type="date"]:focus,
+    input[type="time"]:focus {
+      border-color: var(--fg-dim);
+      box-shadow: var(--glow);
+    }
+
+    /* Style the calendar/clock icon color */
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: invert(70%) sepia(50%) saturate(400%) hue-rotate(70deg);
+      cursor: pointer;
+    }
+
+    .btn {
+      width: 280px;
+      background: transparent;
+      color: var(--fg);
+      border: 1px solid var(--fg-dim);
+      padding: 0.7rem;
+      font-family: 'VT323', monospace;
+      font-size: 1.4rem;
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-transform: uppercase;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--fg);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.2s ease;
+      z-index: -1;
+    }
+
+    .btn:hover { color: var(--bg); border-color: var(--fg); box-shadow: var(--glow); }
+    .btn:hover::before { transform: scaleX(1); }
+
+    /* ── MAIN SCREEN ── */
+    #main-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: min(600px, 92vw);
+      gap: 0;
+      animation: fadeIn 0.8s ease both;
+    }
+
+    .header-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.6rem;
+    }
+
+    .header-label {
+      font-size: 0.7rem;
+      color: var(--fg-muted);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    .reset-btn {
+      background: none;
+      border: 1px solid var(--fg-muted);
+      color: var(--fg-muted);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      padding: 0.3rem 0.6rem;
+      cursor: pointer;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: all 0.15s;
+    }
+
+    .reset-btn:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    /* Big age display */
+    .age-display {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .age-label {
+      font-size: 0.7rem;
+      color: var(--fg-muted);
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    #age-value {
+      font-family: 'VT323', monospace;
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      color: var(--fg);
+      text-shadow: var(--glow-strong);
+      letter-spacing: 0.04em;
+      line-height: 1;
+      word-break: break-all;
+    }
+
+    .age-unit {
+      font-size: 0.7rem;
+      color: var(--fg-muted);
+      letter-spacing: 0.2em;
+      margin-top: 0.4rem;
+    }
+
+    /* Progress to next birthday */
+    .milestone-section {
+      width: 100%;
+      margin-bottom: 1.8rem;
+    }
+
+    .milestone-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--fg-muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    #milestone-pct { color: var(--fg-dim); }
+
+    .progress-track {
+      width: 100%;
+      height: 3px;
+      background: var(--border);
+      position: relative;
+    }
+
+    #progress-bar {
+      height: 100%;
+      background: var(--fg);
+      box-shadow: var(--glow);
+      transition: width 0.1s linear;
+      width: 0%;
+    }
+
+    .progress-dot {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 7px;
+      height: 7px;
+      background: var(--fg);
+      border-radius: 50%;
+      box-shadow: var(--glow-strong);
+      transition: left 0.1s linear;
+      left: 0%;
+    }
+
+    /* Stats grid */
+    .stats-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      border: 1px solid var(--border);
+      margin-bottom: 1.8rem;
+    }
+
+    .stat-cell {
+      background: var(--surface);
+      padding: 0.8rem 1rem;
+      position: relative;
+    }
+
+    .stat-cell::after {
+      content: '';
+      position: absolute;
+      bottom: 0; right: 0;
+      width: 100%; height: 1px;
+      background: var(--border);
+    }
+
+    .stat-cell:nth-child(odd) {
+      border-right: 1px solid var(--border);
+    }
+
+    .stat-label {
+      font-size: 0.62rem;
+      color: var(--fg-muted);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+      font-family: 'VT323', monospace;
+      font-size: 1.5rem;
+      color: var(--fg-dim);
+      text-shadow: 0 0 8px rgba(168,255,120,0.2);
+      letter-spacing: 0.05em;
+    }
+
+    /* Next birthday */
+    .next-bday {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      padding: 0.9rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.8rem;
+    }
+
+    .next-bday-label {
+      font-size: 0.65rem;
+      color: var(--fg-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    #next-bday-countdown {
+      font-family: 'VT323', monospace;
+      font-size: 1.3rem;
+      color: var(--amber);
+      text-shadow: 0 0 10px rgba(255,179,71,0.4);
+      letter-spacing: 0.05em;
+    }
+
+    /* Heartbeat blink on last digit */
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0.4; }
+    }
+
+    .cursor {
+      display: inline-block;
+      animation: blink 0.8s step-end infinite;
+      color: var(--fg-dim);
+    }
+
+    /* Status line */
+    .status-line {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      padding-top: 0.5rem;
+    }
+
+    .status-item {
+      font-size: 0.6rem;
+      color: var(--fg-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    #status-fps { color: var(--fg-muted); }
+
+    /* ── Remember-me toggle ── */
+    .remember-row {
+      width: 280px;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-track {
+      width: 36px;
+      height: 18px;
+      border: 1px solid var(--fg-muted);
+      position: relative;
+      flex-shrink: 0;
+      transition: border-color 0.2s;
+    }
+
+    .toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 12px;
+      height: 12px;
+      background: var(--fg-muted);
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    #remember-cb:checked ~ .remember-row .toggle-track {
+      border-color: var(--fg);
+      box-shadow: var(--glow);
+    }
+
+    #remember-cb:checked ~ .remember-row .toggle-thumb {
+      transform: translateX(18px);
+      background: var(--fg);
+    }
+
+    #remember-cb { display: none; }
+
+    .remember-text {
+      font-size: 0.75rem;
+      color: var(--fg-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    #remember-cb:checked ~ .remember-row .remember-text {
+      color: var(--fg-dim);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Flicker on load */
+    @keyframes crtOn {
+      0% { opacity: 0; filter: brightness(4) blur(4px); }
+      10% { opacity: 1; filter: brightness(2); }
+      15% { opacity: 0.8; }
+      20% { opacity: 1; filter: brightness(1); }
+      100% { opacity: 1; filter: brightness(1); }
+    }
+
+    #main-screen { animation: crtOn 0.7s ease both; }
+  </style>
 </head>
 <body>
 
-<div class="container" id="app">
+<!-- ── FORM SCREEN ── -->
+<div id="form-screen">
+  <div class="form-title">HOW OLD ARE YOU?</div>
+  <div class="form-subtitle">Enter your exact birthdate &amp; time</div>
 
-    <!-- Birthday input -->
-    <form class="form" id="birthForm">
-        <div>Enter your birthdate</div>
-        <input type="date" id="date" required>
-        <input type="time" id="time" step="1" required>
-        <button type="submit">Start</button>
-        <div class="hint">
-            You will be asked again on refresh
-        </div>
-    </form>
+  <div class="field-group">
+    <div class="field-label">Date of Birth</div>
+    <input type="date" id="input-date" required />
+  </div>
 
+  <div class="field-group">
+    <div class="field-label">Time of Birth</div>
+    <input type="time" id="input-time" step="1" value="00:00:00" />
+  </div>
+
+  <!-- Hidden checkbox drives the toggle via CSS sibling selector -->
+  <input type="checkbox" id="remember-cb" />
+  <label class="remember-row" for="remember-cb">
+    <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    <span class="remember-text">Remember on this device</span>
+  </label>
+
+  <button class="btn" id="start-btn">INITIALIZE</button>
+  <div class="form-subtitle" style="font-size:0.65rem">never sent anywhere · your browser only</div>
+</div>
+
+<!-- ── MAIN SCREEN ── -->
+<div id="main-screen">
+  <div class="header-bar">
+    <span class="header-label">AGE.EXE — RUNNING</span>
+    <button class="reset-btn" id="reset-btn">[ RESET ]</button>
+  </div>
+
+  <div class="age-display">
+    <div class="age-label">Your age in years</div>
+    <div id="age-value">0.000000000000000000000000</div>
+    <div class="age-unit">YEARS</div>
+  </div>
+
+  <div class="milestone-section">
+    <div class="milestone-header">
+      <span>Progress to next birthday</span>
+      <span id="milestone-pct">0.00%</span>
+    </div>
+    <div class="progress-track">
+      <div id="progress-bar"></div>
+      <div class="progress-dot" id="progress-dot"></div>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-cell">
+      <div class="stat-label">Days Alive</div>
+      <div class="stat-value" id="stat-days">0</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Hours Alive</div>
+      <div class="stat-value" id="stat-hours">0</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Minutes Alive</div>
+      <div class="stat-value" id="stat-minutes">0</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Seconds Alive</div>
+      <div class="stat-value" id="stat-seconds">0</div>
+    </div>
+  </div>
+
+  <div class="next-bday">
+    <div class="next-bday-label">Next birthday in</div>
+    <div id="next-bday-countdown">calculating...</div>
+  </div>
+
+  <div class="status-line">
+    <span class="status-item">60fps</span>
+    <span class="status-item" id="status-born">BORN: —</span>
+    <span class="status-item" id="status-storage">SESSION ONLY</span>
+  </div>
 </div>
 
 <script>
-    const DECIMALS = 24;
-    const YEAR_SECONDS = 365.2425 * 24 * 60 * 60;
+  const YEAR_SECONDS = 365.2425 * 24 * 3600;
+  const DECIMALS = 24;
+  const STORAGE_KEY = 'age_birthdate_v1';
 
-    let birthdate = null;
-    let lastValue = 0;
+  let birthdate = null;
+  let smoothAge = 0;
+  let frameCount = 0;
+  let lastFpsTime = performance.now();
 
-    const app = document.getElementById("app");
-    const form = document.getElementById("birthForm");
+  const formScreen = document.getElementById('form-screen');
+  const mainScreen = document.getElementById('main-screen');
+  const ageValue   = document.getElementById('age-value');
+  const statDays   = document.getElementById('stat-days');
+  const statHours  = document.getElementById('stat-hours');
+  const statMins   = document.getElementById('stat-minutes');
+  const statSecs   = document.getElementById('stat-seconds');
+  const progressBar  = document.getElementById('progress-bar');
+  const progressDot  = document.getElementById('progress-dot');
+  const milestonePct = document.getElementById('milestone-pct');
+  const nextBday     = document.getElementById('next-bday-countdown');
+  const statusBorn   = document.getElementById('status-born');
 
-    form.addEventListener("submit", e => {
-        e.preventDefault();
+  function fmtNum(n, dec = 0) {
+    return Math.floor(n).toLocaleString('en-US', { maximumFractionDigits: dec });
+  }
 
-        const date = document.getElementById("date").value;
-        const time = document.getElementById("time").value;
+  function nextBirthday(birth, now) {
+    const thisYear = now.getFullYear();
+    let next = new Date(thisYear, birth.getMonth(), birth.getDate(),
+                        birth.getHours(), birth.getMinutes(), birth.getSeconds(), birth.getMilliseconds());
+    if (next <= now) next.setFullYear(thisYear + 1);
+    return next;
+  }
 
-        birthdate = new Date(`${date}T${time}`);
+  function formatCountdown(ms) {
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    const d = Math.floor(totalSec / 86400);
+    const h = Math.floor((totalSec % 86400) / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = n => String(n).padStart(2, '0');
+    if (d > 0) return `${d}d ${pad(h)}h ${pad(m)}m ${pad(s)}s`;
+    return `${pad(h)}h ${pad(m)}m ${pad(s)}s`;
+  }
 
-        app.innerHTML = `<div class="age" id="age">0.000000000000000000000000</div>`;
+  function launch(birth, remembered = false) {
+    birthdate = birth;
+    smoothAge = (Date.now() - birth.getTime()) / 1000 / YEAR_SECONDS;
 
-        start();
-    });
+    const opts = { year: 'numeric', month: 'short', day: 'numeric',
+                   hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    statusBorn.textContent = 'BORN: ' + birth.toLocaleString('en-US', opts).toUpperCase();
 
-    function start() {
-        function update() {
-            const now = Date.now();
-            const ageSeconds = (now - birthdate.getTime()) / 1000;
-            const age = ageSeconds / YEAR_SECONDS;
+    // Update storage indicator in footer
+    document.getElementById('status-storage').textContent =
+      remembered ? 'SAVED LOCALLY' : 'SESSION ONLY';
 
-            // Smooth interpolation
-            lastValue += (age - lastValue) * 0.15;
+    formScreen.style.display = 'none';
+    mainScreen.style.display = 'flex';
 
-            const formatted = lastValue.toFixed(DECIMALS);
+    requestAnimationFrame(tick);
+  }
 
-            document.getElementById("age").textContent = formatted;
-            document.title = formatted;
+  function tick(ts) {
+    const now = Date.now();
+    const elapsedSec = (now - birthdate.getTime()) / 1000;
+    const trueAge = elapsedSec / YEAR_SECONDS;
 
-            requestAnimationFrame(update);
-        }
+    // Smooth lerp (same spirit as original, tighter)
+    smoothAge += (trueAge - smoothAge) * 0.25;
 
-        update();
+    // ── Big age ──
+    ageValue.textContent = smoothAge.toFixed(DECIMALS);
+    document.title = smoothAge.toFixed(10);
+
+    // ── Stats ──
+    statDays.textContent  = fmtNum(elapsedSec / 86400);
+    statHours.textContent = fmtNum(elapsedSec / 3600);
+    statMins.textContent  = fmtNum(elapsedSec / 60);
+    statSecs.textContent  = fmtNum(elapsedSec);
+
+    // ── Progress bar ──
+    const frac = trueAge % 1;
+    const pct = (frac * 100).toFixed(2);
+    progressBar.style.width = pct + '%';
+    progressDot.style.left  = `calc(${pct}% - 3.5px)`;
+    milestonePct.textContent = pct + '%';
+
+    // ── Next birthday countdown ──
+    const nowDate = new Date(now);
+    const nb = nextBirthday(birthdate, nowDate);
+    nextBday.textContent = formatCountdown(nb - nowDate);
+
+    frameCount++;
+    requestAnimationFrame(tick);
+  }
+
+  // ── Start button ──
+  document.getElementById('start-btn').addEventListener('click', () => {
+    const dateVal  = document.getElementById('input-date').value;
+    const timeVal  = document.getElementById('input-time').value || '00:00:00';
+    const remember = document.getElementById('remember-cb').checked;
+    if (!dateVal) { document.getElementById('input-date').focus(); return; }
+    const birth = new Date(`${dateVal}T${timeVal}`);
+    if (isNaN(birth.getTime())) return;
+    if (remember) {
+      localStorage.setItem(STORAGE_KEY, birth.toISOString());
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
     }
-</script>
+    launch(birth, remember);
+  });
 
+  // ── Reset button ──
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    localStorage.removeItem(STORAGE_KEY);
+    mainScreen.style.display = 'none';
+    formScreen.style.display = 'flex';
+    // Uncheck the toggle so the state is honest after a reset
+    document.getElementById('remember-cb').checked = false;
+    birthdate = null;
+  });
+
+  // ── Auto-launch if stored ──
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    const birth = new Date(stored);
+    if (!isNaN(birth.getTime())) launch(birth, true);
+  }
+</script>
 </body>
 </html>
